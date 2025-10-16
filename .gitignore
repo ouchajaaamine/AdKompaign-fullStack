@@ -1,0 +1,25 @@
+# Global ignores for this mono-repo
+
+# Node/Next
+AdKompaign-front/node_modules/
+AdKompaign-front/.next/
+AdKompaign-front/.turbo/
+AdKompaign-front/.vercel/
+
+# Symfony/PHP
+AdKompaign/vendor/
+AdKompaign/var/
+AdKompaign/public/bundles/
+AdKompaign/.phpunit.result.cache
+
+# Env files
+.env
+AdKompaign/.env
+AdKompaign/.env.local
+AdKompaign/.env.*.local
+
+# OS/Editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
