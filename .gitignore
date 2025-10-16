@@ -1,25 +1,88 @@
-# Global ignores for this mono-repo
+# Global ignores for this monorepo (Symfony API + Next.js frontend)
 
-# Node/Next
-AdKompaign-front/node_modules/
-AdKompaign-front/.next/
-AdKompaign-front/.turbo/
-AdKompaign-front/.vercel/
-
-# Symfony/PHP
-AdKompaign/vendor/
-AdKompaign/var/
-AdKompaign/public/bundles/
-AdKompaign/.phpunit.result.cache
-
-# Env files
-.env
-AdKompaign/.env
-AdKompaign/.env.local
-AdKompaign/.env.*.local
-
-# OS/Editor
+####################################
+# OS / Editor
+####################################
 .DS_Store
 Thumbs.db
 .vscode/
 .idea/
+*.swp
+*.swo
+*.orig
+*.bak
+
+####################################
+# Environment files (anywhere)
+####################################
+.env
+AdKompaign/.env
+AdKompaign/.env.local
+AdKompaign/.env.*.local
+AdKompaign/.env.development
+AdKompaign/.env.production
+AdKompaign-front/.env
+AdKompaign-front/.env.local
+AdKompaign-front/.env.*.local
+AdKompaign-front/.env.development
+AdKompaign-front/.env.production
+
+####################################
+# Logs
+####################################
+*.log
+logs/
+AdKompaign/var/log/
+AdKompaign-front/logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+####################################
+# Coverage / reports
+####################################
+coverage/
+AdKompaign/.phpunit.result.cache
+.nyc_output/
+.clover/
+
+####################################
+# Next.js / Node
+####################################
+AdKompaign-front/node_modules/
+AdKompaign-front/.next/
+AdKompaign-front/.next/cache/
+AdKompaign-front/.next/static/
+AdKompaign-front/.turbo/
+AdKompaign-front/.vercel/
+AdKompaign-front/.pnpm-store/
+AdKompaign-front/out/
+AdKompaign-front/dist/
+AdKompaign-front/build/
+AdKompaign-front/*.tsbuildinfo
+
+####################################
+# Symfony / PHP
+####################################
+AdKompaign/vendor/
+AdKompaign/var/
+AdKompaign/var/cache/
+AdKompaign/public/bundles/
+AdKompaign/public/build/
+
+####################################
+# Misc caches & archives
+####################################
+.cache/
+**/.cache/
+*.zip
+*.tar
+*.tar.gz
+
+####################################
+# Docker
+####################################
+.docker/
+**/.docker/
+*.pid
