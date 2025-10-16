@@ -1,0 +1,77 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: adkompaign_postgres
+    environment:
+      POSTGRES_DB: ad_kompaign
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: app
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - adkompaign_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U app -d ad_kompaign"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: adkompaign_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - adkompaign_network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # PHP Application
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: adkompaign_app
+    environment:
+      APP_ENV: dev
+      DATABASE_URL: postgresql://app:app@postgres:5432/ad_kompaign?serverVersion=16&charset=utf8
+      REDIS_URL: redis://redis:6379
+      OPENROUTER_TOKEN: ${OPENROUTER_TOKEN:-your_openrouter_token_here}
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/var/www/html
+      - /var/www/html/vendor
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - adkompaign_network
+    healthcheck:
+      test: ["CMD", "/usr/local/bin/docker-healthcheck.sh"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    entrypoint: ["/usr/local/bin/docker-entrypoint.sh"]
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  adkompaign_network:
+    driver: bridge
