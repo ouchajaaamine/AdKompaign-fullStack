@@ -80,7 +80,7 @@ class Campaign
     private Collection $metrics;
 
     #[ORM\ManyToMany(targetEntity: Affiliate::class, inversedBy: 'campaigns')]
-    #[Groups(['campaign:read'])]
+    #[Groups(['campaign:read', 'campaign:write'])]
     private Collection $affiliates;
 
     public function __construct()

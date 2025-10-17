@@ -65,7 +65,8 @@ export async function fetchAffiliate(id: number): Promise<any> {
   return response.json()
 }
 
-export async function createAffiliate(data: { name: string; email: string }): Promise<any> {
+export async function createAffiliate(data: { name: string; email: string; campaigns?: string[] }): Promise<any> {
+  console.log("Creating affiliate with data:", data)
   const response = await fetch(`${API_BASE_URL}/api/affiliates`, {
     method: "POST",
     headers: {
@@ -73,19 +74,30 @@ export async function createAffiliate(data: { name: string; email: string }): Pr
     },
     body: JSON.stringify(data),
   })
-  if (!response.ok) throw new Error("Failed to create affiliate")
+  console.log("Response status:", response.status, response.statusText)
+  if (!response.ok) {
+    const errorText = await response.text()
+    console.error("Error response:", errorText)
+    throw new Error("Failed to create affiliate")
+  }
   return response.json()
 }
 
-export async function updateAffiliate(id: number, data: { name: string; email: string }): Promise<any> {
+export async function updateAffiliate(id: number, data: { name: string; email: string; campaigns?: string[] }): Promise<any> {
+  console.log("Updating affiliate", id, "with data:", data)
   const response = await fetch(`${API_BASE_URL}/api/affiliates/${id}`, {
     method: "PATCH",
     headers: {
-      "Content-Type": "application/json",
+      "Content-Type": "application/merge-patch+json",
     },
     body: JSON.stringify(data),
   })
-  if (!response.ok) throw new Error("Failed to update affiliate")
+  console.log("Response status:", response.status, response.statusText)
+  if (!response.ok) {
+    const errorText = await response.text()
+    console.error("Error response:", errorText)
+    throw new Error("Failed to update affiliate")
+  }
   return response.json()
 }
 

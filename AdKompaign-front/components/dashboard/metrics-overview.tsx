@@ -24,7 +24,6 @@ export function MetricsOverview({ metrics, campaigns }: MetricsOverviewProps) {
   // Calculate aggregate stats from metrics
   const totalClicks = metrics.reduce((sum, m) => sum + (m.clicks || 0), 0)
   const totalConversions = metrics.reduce((sum, m) => sum + (m.conversions || 0), 0)
-  const totalRevenue = metrics.reduce((sum, m) => sum + parseFloat(m.revenue || "0"), 0)
 
   // Get top 3 campaigns by revenue from campaigns data
   const topCampaigns = campaigns
@@ -35,7 +34,7 @@ export function MetricsOverview({ metrics, campaigns }: MetricsOverviewProps) {
   return (
     <div className="space-y-6">
       {/* Top Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Card className="bg-gradient-to-br from-blue-500/10 to-blue-600/10 border-blue-200/20">
           <CardContent className="pt-6">
             <div className="flex items-start justify-between">
@@ -59,21 +58,6 @@ export function MetricsOverview({ metrics, campaigns }: MetricsOverviewProps) {
                 </p>
               </div>
               <Target className="h-8 w-8 text-purple-500 opacity-50" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gradient-to-br from-green-500/10 to-green-600/10 border-green-200/20">
-          <CardContent className="pt-6">
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Total Revenue</p>
-                <p className="text-3xl font-bold text-green-600 mt-2">{formatCurrency(totalRevenue)}</p>
-                <p className="text-xs text-muted-foreground mt-2">
-                  {formatCurrency(totalRevenue / totalClicks)}/click
-                </p>
-              </div>
-              <TrendingUp className="h-8 w-8 text-green-500 opacity-50" />
             </div>
           </CardContent>
         </Card>

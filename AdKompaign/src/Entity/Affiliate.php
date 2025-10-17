@@ -33,7 +33,7 @@ class Affiliate
     private ?string $email = null;
 
     #[ORM\ManyToMany(targetEntity: Campaign::class, inversedBy: 'affiliates')]
-    #[Groups(['affiliate:read'])]
+    #[Groups(['affiliate:read', 'affiliate:write'])]
     private Collection $campaigns;
 
     #[ORM\Column]

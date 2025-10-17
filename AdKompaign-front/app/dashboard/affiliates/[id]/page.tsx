@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { ArrowLeft, Mail, Calendar, Trash2, Edit } from "lucide-react"
 import Link from "next/link"
-import { fetchAffiliate, deleteAffiliate } from "@/lib/api"
+import { fetchAffiliate, deleteAffiliate, fetchCampaign } from "@/lib/api"
 import type { Affiliate } from "@/lib/types"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
@@ -14,13 +14,24 @@ export default function AffiliateDetailPage() {
   const params = useParams()
   const router = useRouter()
   const [affiliate, setAffiliate] = useState<Affiliate | null>(null)
+  const [campaigns, setCampaigns] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [deleting, setDeleting] = useState(false)
 
   useEffect(() => {
     if (params.id) {
       fetchAffiliate(Number(params.id))
-        .then(setAffiliate)
+        .then(async (affiliateData) => {
+          setAffiliate(affiliateData)
+          if (affiliateData.campaigns && affiliateData.campaigns.length > 0) {
+            const campaignPromises = affiliateData.campaigns.map((campaignUrl: string) => {
+              const id = campaignUrl.split('/').pop()
+              return fetchCampaign(Number(id))
+            })
+            const campaignDetails = await Promise.all(campaignPromises)
+            setCampaigns(campaignDetails)
+          }
+        })
         .catch(console.error)
         .finally(() => setLoading(false))
     }
@@ -67,8 +78,8 @@ export default function AffiliateDetailPage() {
           </div>
         </div>
         <div className="flex gap-2">
-          <Link href={`/dashboard/affiliates/${affiliate.id}/edit`}>
-            <Button variant="outline" className="gap-2 bg-transparent">
+          <Link href="/dashboard/affiliates">
+            <Button variant="outline" className="gap-2">
               <Edit className="h-4 w-4" />
               Edit
             </Button>
@@ -126,12 +137,15 @@ export default function AffiliateDetailPage() {
 
       <Card className="border-border bg-card p-6">
         <h2 className="mb-4 text-xl font-semibold">Associated Campaigns</h2>
-        {affiliate.campaigns && affiliate.campaigns.length > 0 ? (
+        {campaigns && campaigns.length > 0 ? (
           <div className="space-y-2">
-            {affiliate.campaigns.map((campaign, index) => (
-              <div key={index} className="rounded-lg border border-border p-3">
-                <p className="text-sm text-muted-foreground">{campaign}</p>
-              </div>
+            {campaigns.map((campaign, index) => (
+              <Link key={campaign.id} href={`/dashboard/campaigns/${campaign.id}`}>
+                <div className="rounded-lg border border-border p-3 hover:bg-accent/50 transition-colors cursor-pointer">
+                  <p className="font-medium text-foreground">{campaign.name}</p>
+                  <p className="text-sm text-muted-foreground">Budget: ${campaign.budget}</p>
+                </div>
+              </Link>
             ))}
           </div>
         ) : (

@@ -3,8 +3,7 @@
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import Link from "next/link"
-import { Calendar, DollarSign, Edit, Trash2 } from "lucide-react"
+import { Calendar, DollarSign, Edit, Trash2, TrendingUp } from "lucide-react"
 
 interface CampaignCardProps {
   campaign: {
@@ -27,73 +26,87 @@ export function CampaignCard({ campaign, onEdit, onDelete }: CampaignCardProps) 
   const statusColors = {
     active: "default",
     paused: "secondary",
-    completed: "secondary", // Will be overridden with custom green styling
+    completed: "secondary",
     draft: "secondary",
   } as const
 
   return (
-    <Card className="p-6 bg-card/50 backdrop-blur-sm border-border/50 hover:border-primary/50 transition-all">
-      <div className="space-y-4">
-        <div className="flex items-start justify-between">
-          <div>
-            <h3 className="text-lg font-semibold text-foreground">{campaign.name}</h3>
-            <Badge 
-              variant={statusColors[campaign.status as keyof typeof statusColors]} 
-              className={`mt-2 ${campaign.status === 'completed' ? 'bg-green-600 text-white hover:bg-green-700' : ''}`}
+    <Card className="group relative overflow-hidden border border-border/40 hover:border-primary/30 hover:shadow-lg transition-all duration-300 bg-card/80 backdrop-blur">
+      {/* Status indicator bar */}
+      <div className={`absolute top-0 left-0 right-0 h-1 ${
+        campaign.status === 'active' ? 'bg-primary' : 
+        campaign.status === 'completed' ? 'bg-green-600' : 
+        campaign.status === 'draft' ? 'bg-yellow-600' : 'bg-gray-600'
+      }`} />
+      
+      <div className="p-4 space-y-3">
+        {/* Header */}
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex-1 min-w-0">
+            <h3 className="font-semibold text-foreground truncate mb-1.5">{campaign.name}</h3>
+            <Badge
+              variant={statusColors[campaign.status as keyof typeof statusColors]}
+              className={`text-xs ${campaign.status === 'completed' ? 'bg-green-600 text-white hover:bg-green-700' : ''}`}
             >
               {campaign.status}
             </Badge>
           </div>
+          
+          {/* Action buttons */}
+          <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+            {onEdit && (
+              <Button
+                onClick={() => onEdit(campaign)}
+                size="sm"
+                variant="ghost"
+                className="h-8 w-8 p-0"
+              >
+                <Edit className="h-3.5 w-3.5" />
+              </Button>
+            )}
+            {onDelete && (
+              <Button
+                onClick={() => onDelete(campaign.id)}
+                size="sm"
+                variant="ghost"
+                className="h-8 w-8 p-0 hover:bg-destructive/10 hover:text-destructive"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </Button>
+            )}
+          </div>
         </div>
 
-        <div className="space-y-2 text-sm">
-          <div className="flex items-center gap-2 text-muted-foreground">
-            <DollarSign className="h-4 w-4" />
-            <span>Budget: {campaign.budget}</span>
+        {/* Budget & Dates */}
+        <div className="space-y-2 text-xs text-muted-foreground">
+          <div className="flex items-center gap-2">
+            <DollarSign className="h-3.5 w-3.5 shrink-0" />
+            <span className="truncate">{campaign.budget}</span>
           </div>
-          <div className="flex items-center gap-2 text-muted-foreground">
-            <Calendar className="h-4 w-4" />
-            <span>
-              {new Date(campaign.startDate).toLocaleDateString()} - {new Date(campaign.endDate).toLocaleDateString()}
+          <div className="flex items-center gap-2">
+            <Calendar className="h-3.5 w-3.5 shrink-0" />
+            <span className="truncate">
+              {new Date(campaign.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - {new Date(campaign.endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
             </span>
           </div>
         </div>
 
+        {/* Metrics */}
         {campaign.revenue && (
-          <div className="grid grid-cols-2 gap-4 pt-4 border-t border-border">
+          <div className="flex items-center justify-between pt-3 border-t border-border/50">
             <div>
-              <p className="text-xs text-muted-foreground">Revenue</p>
-              <p className="text-lg font-semibold text-primary">{campaign.revenue}</p>
+              <p className="text-xs text-muted-foreground mb-0.5">Revenue</p>
+              <p className="text-sm font-semibold text-primary">{campaign.revenue}</p>
             </div>
-            <div>
-              <p className="text-xs text-muted-foreground">ROI</p>
-              <p className="text-lg font-semibold text-green-600">{campaign.roi}</p>
+            <div className="text-right">
+              <p className="text-xs text-muted-foreground mb-0.5">ROI</p>
+              <div className="flex items-center gap-1">
+                <TrendingUp className="h-3 w-3 text-green-600" />
+                <p className="text-sm font-semibold text-green-600">{campaign.roi}</p>
+              </div>
             </div>
           </div>
         )}
-
-        <div className="flex gap-2">
-          {onEdit && (
-            <Button
-              onClick={() => onEdit(campaign)}
-              className="flex-1"
-              variant="outline"
-            >
-              <Edit className="h-4 w-4 mr-2" />
-              Edit
-            </Button>
-          )}
-          {onDelete && (
-            <Button
-              onClick={() => onDelete(campaign.id)}
-              className="flex-1"
-              variant="destructive"
-            >
-              <Trash2 className="h-4 w-4 mr-2" />
-              Delete
-            </Button>
-          )}
-        </div>
       </div>
     </Card>
   )
