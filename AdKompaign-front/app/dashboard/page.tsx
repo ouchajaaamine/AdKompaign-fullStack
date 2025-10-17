@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react"
 import { StatsCard } from "@/components/dashboard/stats-card"
 import { RevenueChart } from "@/components/dashboard/revenue-chart"
-import { TopCampaigns } from "@/components/dashboard/top-campaigns"
 import { MetricsOverview } from "@/components/dashboard/metrics-overview"
 import { DollarSign, TrendingUp, Target, Activity } from "lucide-react"
 import { fetchCampaigns, fetchTopMetrics } from "@/lib/api"
@@ -16,7 +15,7 @@ export default function DashboardPage() {
   useEffect(() => {
     async function loadData() {
       try {
-        const [campaignsData, metricsData] = await Promise.all([fetchCampaigns(), fetchTopMetrics()])
+        const [campaignsData, metricsData] = await Promise.all([fetchCampaigns(), fetchTopMetrics(200)])
         setCampaigns(campaignsData)
         setMetrics(metricsData)
       } catch (error) {
@@ -44,17 +43,7 @@ export default function DashboardPage() {
       revenue: c.revenue || 0,
     }))
 
-  const topCampaigns = campaigns
-    .filter((c) => c.roi !== undefined)
-    .sort((a, b) => (b.roi || 0) - (a.roi || 0))
-    .slice(0, 5)
-    .map((c) => ({
-      id: c.id,
-      name: c.name,
-      budget: `$${c.budget}`,
-      roi: parseFloat((c.roi || 0).toFixed(2)),
-      status: c.status,
-    }))
+  // Removed TopCampaigns section as requested
 
   if (loading) {
     return (
@@ -83,14 +72,7 @@ export default function DashboardPage() {
         <StatsCard title="Active Campaigns" value={activeCampaigns} icon={Activity} />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2">
-          <RevenueChart data={revenueData} />
-        </div>
-        <div>
-          <TopCampaigns campaigns={topCampaigns} />
-        </div>
-      </div>
+      <RevenueChart data={revenueData} />
 
       <MetricsOverview metrics={metrics} campaigns={campaigns} />
     </div>

@@ -21,59 +21,16 @@ interface MetricsOverviewProps {
 }
 
 export function MetricsOverview({ metrics, campaigns }: MetricsOverviewProps) {
-  // Group metrics by campaign and calculate aggregates
-  const metricsByCampaign = metrics.reduce(
-    (acc, metric) => {
-      const campaignId = metric.campaignId
-      if (!acc[campaignId]) {
-        acc[campaignId] = {
-          campaignId,
-          campaignName: campaigns.find((c) => c.id === campaignId)?.name || "Unknown",
-          totalClicks: 0,
-          totalConversions: 0,
-          totalRevenue: 0,
-          conversionRate: 0,
-          revenuePerClick: 0,
-          metricCount: 0,
-        }
-      }
-      acc[campaignId].totalClicks += metric.clicks || 0
-      acc[campaignId].totalConversions += metric.conversions || 0
-      acc[campaignId].totalRevenue += parseFloat(metric.revenue || "0")
-      acc[campaignId].metricCount += 1
-      return acc
-    },
-    {} as Record<
-      number,
-      {
-        campaignId: number
-        campaignName: string
-        totalClicks: number
-        totalConversions: number
-        totalRevenue: number
-        conversionRate: number
-        revenuePerClick: number
-        metricCount: number
-      }
-    >
-  )
-
-  // Calculate derived metrics
-  Object.values(metricsByCampaign).forEach((campaign: any) => {
-    campaign.conversionRate =
-      campaign.totalClicks > 0 ? ((campaign.totalConversions / campaign.totalClicks) * 100).toFixed(2) : "0"
-    campaign.revenuePerClick = campaign.totalClicks > 0 ? (campaign.totalRevenue / campaign.totalClicks).toFixed(2) : "0"
-  })
-
-  // Sort by revenue (descending) and take top 3
-  const topCampaignMetrics = (Object.values(metricsByCampaign) as any[])
-    .sort((a: any, b: any) => b.totalRevenue - a.totalRevenue)
-    .slice(0, 3)
-
-  // Calculate aggregate stats
+  // Calculate aggregate stats from metrics
   const totalClicks = metrics.reduce((sum, m) => sum + (m.clicks || 0), 0)
   const totalConversions = metrics.reduce((sum, m) => sum + (m.conversions || 0), 0)
   const totalRevenue = metrics.reduce((sum, m) => sum + parseFloat(m.revenue || "0"), 0)
+
+  // Get top 3 campaigns by revenue from campaigns data
+  const topCampaigns = campaigns
+    .filter((c) => c.revenue !== undefined && c.revenue > 0)
+    .sort((a, b) => (b.revenue || 0) - (a.revenue || 0))
+    .slice(0, 3)
 
   return (
     <div className="space-y-6">
@@ -123,55 +80,35 @@ export function MetricsOverview({ metrics, campaigns }: MetricsOverviewProps) {
       </div>
 
       {/* Top Performing Campaigns */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <BarChart3 className="h-5 w-5" />
-            Top Performing Campaigns
-          </CardTitle>
-          <CardDescription>Best performing campaigns by revenue</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {topCampaignMetrics.map((campaign) => (
-              <div key={campaign.campaignId} className="p-4 border border-border rounded-lg hover:bg-accent/50 transition">
-                <div className="flex items-start justify-between mb-3">
-                  <div>
-                    <h3 className="font-semibold text-foreground">{campaign.campaignName}</h3>
-                    <p className="text-xs text-muted-foreground">{campaign.metricCount} metrics tracked</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-lg font-bold text-green-600">{formatCurrency(campaign.totalRevenue)}</p>
-                    <p className="text-xs text-muted-foreground">Revenue</p>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-3 gap-3 text-sm">
-                  <div className="bg-blue-500/10 p-2 rounded">
-                    <p className="text-xs text-muted-foreground">Clicks</p>
-                    <p className="font-semibold text-blue-600">{campaign.totalClicks.toLocaleString()}</p>
-                  </div>
-                  <div className="bg-purple-500/10 p-2 rounded">
-                    <p className="text-xs text-muted-foreground">Conversions</p>
-                    <p className="font-semibold text-purple-600">
-                      {campaign.totalConversions.toLocaleString()}
-                    </p>
-                  </div>
-                  <div className="bg-orange-500/10 p-2 rounded">
-                    <p className="text-xs text-muted-foreground">Conv. Rate</p>
-                    <p className="font-semibold text-orange-600">{campaign.conversionRate}%</p>
+      {topCampaigns.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <BarChart3 className="h-5 w-5" />
+              Top Performing Campaigns
+            </CardTitle>
+            <CardDescription>Best performing campaigns by revenue</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {topCampaigns.map((campaign) => (
+                <div key={campaign.id} className="p-4 border border-border rounded-lg hover:bg-accent/50 transition">
+                  <div className="flex items-start justify-between mb-3">
+                    <div>
+                      <h3 className="font-semibold text-foreground">{campaign.name}</h3>
+                      <p className="text-xs text-muted-foreground">Campaign data</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-lg font-bold text-green-600">{formatCurrency(campaign.revenue || 0)}</p>
+                      <p className="text-xs text-muted-foreground">Revenue</p>
+                    </div>
                   </div>
                 </div>
-
-                <div className="mt-3 bg-gradient-to-r from-green-500/20 to-green-600/20 p-2 rounded text-xs">
-                  <span className="text-green-700 font-semibold">{formatCurrency(campaign.revenuePerClick)}</span>
-                  <span className="text-muted-foreground"> per click</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   )
 }

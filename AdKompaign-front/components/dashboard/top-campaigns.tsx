@@ -7,9 +7,12 @@ import Link from "next/link"
 interface Campaign {
   id: number
   name: string
-  budget: string
-  roi: number
-  status: string
+  revenue: number
+  clicks: number
+  conversions: number
+  convRate: string
+  cpc: string
+  metricsTracked: number
 }
 
 interface TopCampaignsProps {
@@ -20,19 +23,34 @@ export function TopCampaigns({ campaigns }: TopCampaignsProps) {
   return (
     <Card className="p-6 bg-card/50 backdrop-blur-sm border-border/50">
       <h3 className="text-lg font-semibold text-foreground mb-4">Top Performing Campaigns</h3>
-      <div className="space-y-3">
+      <p className="text-sm text-muted-foreground mb-4">Best performing campaigns by revenue</p>
+      <div className="space-y-4">
         {campaigns.map((campaign) => (
-          <Link
-            key={campaign.id}
-            href={`/dashboard/campaigns/${campaign.id}`}
-            className="flex items-center justify-between p-3 rounded-lg bg-secondary/30 hover:bg-secondary/50 transition-colors"
-          >
-            <div className="flex-1">
-              <p className="font-medium text-foreground">{campaign.name}</p>
-              <p className="text-sm text-muted-foreground">Budget: {campaign.budget}</p>
-            </div>
-            <Badge variant={campaign.roi > 150 ? "default" : "secondary"}>{campaign.roi}% ROI</Badge>
-          </Link>
+          <div key={campaign.id} className="p-4 rounded-lg bg-secondary/30 border">
+            <Link href={`/dashboard/campaigns/${campaign.id}`} className="block">
+              <h4 className="font-medium text-foreground mb-2">{campaign.name}</h4>
+              <p className="text-sm text-muted-foreground mb-2">{campaign.metricsTracked} metrics tracked</p>
+              <div className="grid grid-cols-2 gap-2 text-sm">
+                <div>
+                  <span className="font-medium">${campaign.revenue.toFixed(2)}</span>
+                  <span className="text-muted-foreground ml-1">Revenue</span>
+                </div>
+                <div>
+                  <span className="font-medium">{campaign.clicks.toLocaleString()}</span>
+                  <span className="text-muted-foreground ml-1">Clicks</span>
+                </div>
+                <div>
+                  <span className="font-medium">{campaign.conversions}</span>
+                  <span className="text-muted-foreground ml-1">Conversions</span>
+                </div>
+                <div>
+                  <span className="font-medium">{campaign.convRate}%</span>
+                  <span className="text-muted-foreground ml-1">Conv. Rate</span>
+                </div>
+              </div>
+              <p className="text-sm text-muted-foreground mt-2">${campaign.cpc} per click</p>
+            </Link>
+          </div>
         ))}
       </div>
     </Card>

@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Plus, Edit, Trash2 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
+import { formatCurrency } from "@/lib/utils"
 
 export default function CampaignsPage() {
   const [campaigns, setCampaigns] = useState<any[]>([])
@@ -53,7 +54,7 @@ export default function CampaignsPage() {
     return {
       ...campaign,
       budget: `$${campaign.budget}`,
-      revenue: `$${campaign.revenue?.toFixed(2) || '0.00'}`,
+      revenue: formatCurrency(campaign.revenue || 0),
       roi: `${campaign.roi?.toFixed(2) || '0.00'}%`,
     }
   })
