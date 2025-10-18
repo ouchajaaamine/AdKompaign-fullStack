@@ -4,6 +4,7 @@ import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Calendar, DollarSign, Edit, Trash2, TrendingUp } from "lucide-react"
+import { useRouter } from "next/navigation"
 
 interface CampaignCardProps {
   campaign: {
@@ -23,6 +24,8 @@ interface CampaignCardProps {
 }
 
 export function CampaignCard({ campaign, onEdit, onDelete }: CampaignCardProps) {
+  const router = useRouter()
+
   const statusColors = {
     active: "default",
     paused: "secondary",
@@ -30,8 +33,19 @@ export function CampaignCard({ campaign, onEdit, onDelete }: CampaignCardProps) 
     draft: "secondary",
   } as const
 
+  const handleCardClick = (e: React.MouseEvent) => {
+    // Prevent navigation if clicking on action buttons
+    if ((e.target as HTMLElement).closest('button')) {
+      return
+    }
+    router.push(`/dashboard/campaigns/${campaign.id}`)
+  }
+
   return (
-    <Card className="group relative overflow-hidden border border-border/40 hover:border-primary/30 hover:shadow-lg transition-all duration-300 bg-card/80 backdrop-blur">
+    <Card 
+      className="group relative overflow-hidden border border-border/40 hover:border-primary/30 hover:shadow-lg transition-all duration-300 bg-card/80 backdrop-blur cursor-pointer"
+      onClick={handleCardClick}
+    >
       {/* Status indicator bar */}
       <div className={`absolute top-0 left-0 right-0 h-1 ${
         campaign.status === 'active' ? 'bg-primary' : 

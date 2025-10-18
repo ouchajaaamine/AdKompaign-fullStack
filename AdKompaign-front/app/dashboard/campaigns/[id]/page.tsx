@@ -2,42 +2,50 @@
 
 import { useEffect, useState } from "react"
 import { useParams } from "next/navigation"
-import { fetchCampaign, fetchMetrics } from "@/lib/api"
+import { fetchCampaign, API_BASE_URL } from "@/lib/api"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { ChatInterface } from "@/components/ai/chat-interface"
-import {
-  LineChart,
-  Line,
-  BarChart,
-  Bar,
-  PieChart,
-  Pie,
-  Cell,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  Legend,
-} from "recharts"
-import { ArrowLeft, DollarSign, MousePointer, TrendingUp, Users } from "lucide-react"
+import { ArrowLeft, DollarSign, TrendingUp, Users, Activity, Calendar, Target } from "lucide-react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
+import { formatCurrency } from "@/lib/utils"
 
 export default function CampaignDetailPage() {
   const params = useParams()
   const campaignId = Number.parseInt(params.id as string)
   const [campaign, setCampaign] = useState<any>(null)
-  const [metrics, setMetrics] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [metrics, setMetrics] = useState<any[]>([])
+  const [affiliates, setAffiliates] = useState<any[]>([])
 
   useEffect(() => {
     async function loadData() {
       try {
-        const [campaignData, metricsData] = await Promise.all([fetchCampaign(campaignId), fetchMetrics()])
+        const campaignData = await fetchCampaign(campaignId)
         setCampaign(campaignData)
-        setMetrics(metricsData.filter((m) => m.campaignId === campaignId))
+
+        const fetchIri = async (iri: string) => {
+          try {
+            const url = iri.startsWith('http') ? iri : `${API_BASE_URL}${iri}`
+            const res = await fetch(url)
+            if (!res.ok) return null
+            return await res.json()
+          } catch (e) {
+            return null
+          }
+        }
+
+        if (Array.isArray(campaignData.metrics) && campaignData.metrics.length) {
+          const metricsData = await Promise.all(campaignData.metrics.map((iri: string) => fetchIri(iri)))
+          setMetrics(metricsData.filter(Boolean))
+        }
+
+        if (Array.isArray(campaignData.affiliates) && campaignData.affiliates.length) {
+          const affiliatesData = await Promise.all(campaignData.affiliates.map((iri: string) => fetchIri(iri)))
+          setAffiliates(affiliatesData.filter(Boolean))
+        }
+
       } catch (error) {
         console.error("[v0] Error loading campaign details:", error)
       } finally {
@@ -50,7 +58,10 @@ export default function CampaignDetailPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full">
-        <div className="text-muted-foreground">Loading campaign details...</div>
+        <div className="flex flex-col items-center gap-3">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          <div className="text-muted-foreground">Loading campaign details...</div>
+        </div>
       </div>
     )
   }
@@ -63,173 +74,259 @@ export default function CampaignDetailPage() {
     )
   }
 
-  const totalClicks = metrics.reduce((sum, m) => sum + (m.clicks || 0), 0)
-  const totalConversions = metrics.reduce((sum, m) => sum + (m.conversions || 0), 0)
-  const totalRevenue = metrics.reduce((sum, m) => sum + Number.parseFloat(m.revenue || 0), 0)
-  const roi = totalClicks > 0 ? ((totalConversions / totalClicks) * 100).toFixed(1) : 0
-
-  const clicksData = metrics.map((m) => ({
-    date: new Date(m.date).toLocaleDateString("en-US", { month: "short", day: "numeric" }),
-    clicks: m.clicks,
-  }))
-
-  const conversionsData = metrics.map((m) => ({
-    date: new Date(m.date).toLocaleDateString("en-US", { month: "short", day: "numeric" }),
-    conversions: m.conversions,
-  }))
-
-  const budgetData = [
-    { name: "Spent", value: totalRevenue },
-    { name: "Remaining", value: Math.max(0, Number.parseFloat(campaign.budget) - totalRevenue) },
-  ]
-
-  const COLORS = ["hsl(var(--primary))", "hsl(var(--secondary))"]
+  const getStatusColor = (status: string) => {
+    switch(status?.toLowerCase()) {
+      case 'active': return 'bg-blue-500/10 text-blue-600 border-blue-500/20'
+      case 'completed': return 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20'
+      case 'draft': return 'bg-amber-500/10 text-amber-600 border-amber-500/20'
+      default: return 'bg-muted/10 text-muted-foreground border-muted/20'
+    }
+  }
 
   return (
     <div className="flex h-full">
-      <div className="flex-1 overflow-y-auto p-8">
+      <div className="flex-1 overflow-y-auto p-8 bg-gradient-to-br from-background via-background to-muted/5">
         <Link href="/dashboard/campaigns">
-          <Button variant="ghost" className="mb-4 gap-2">
+          <Button variant="ghost" className="mb-6 gap-2 hover:gap-3 transition-all">
             <ArrowLeft className="h-4 w-4" />
             Back to Campaigns
           </Button>
         </Link>
 
-        <div className="space-y-6">
-          <div className="flex items-start justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-foreground">{campaign.name}</h1>
-              <p className="text-muted-foreground mt-1">
-                {new Date(campaign.startDate).toLocaleDateString()} - {new Date(campaign.endDate).toLocaleDateString()}
-              </p>
+        <div className="space-y-8">
+          {/* Header Section */}
+          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-card/80 to-card/40 backdrop-blur-md border border-border/60 p-8 shadow-xl">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl -z-10"></div>
+            <div className="flex items-start justify-between">
+              <div className="flex-1">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="p-2 rounded-lg bg-primary/10">
+                    <Target className="h-5 w-5 text-primary" />
+                  </div>
+                  <Badge className={`${getStatusColor(campaign.status)} border px-3 py-1`}>
+                    {campaign.status}
+                  </Badge>
+                </div>
+                <h1 className="text-4xl font-bold text-foreground mb-3">{campaign.name}</h1>
+                <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                  <div className="flex items-center gap-2">
+                    <Calendar className="h-4 w-4" />
+                    <span>{new Date(campaign.startDate).toLocaleDateString()}</span>
+                  </div>
+                  <span>→</span>
+                  <span>{campaign.endDate ? new Date(campaign.endDate).toLocaleDateString() : 'Ongoing'}</span>
+                </div>
+              </div>
             </div>
-            <Badge variant={campaign.status === "active" ? "default" : "secondary"}>{campaign.status}</Badge>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <Card className="p-6 bg-card/50 backdrop-blur-sm border-border/50">
-              <div className="flex items-center gap-3">
-                <div className="rounded-full bg-primary/10 p-3">
-                  <MousePointer className="h-5 w-5 text-primary" />
+          {/* Key Metrics Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <Card className="relative overflow-hidden p-6 bg-gradient-to-br from-card/80 to-card/40 backdrop-blur-md border-border/60 shadow-lg hover:shadow-xl transition-shadow">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-2xl"></div>
+              <div className="flex items-center gap-4">
+                <div className="rounded-xl bg-gradient-to-br from-primary/20 to-primary/10 p-4 shadow-inner">
+                  <DollarSign className="h-6 w-6 text-primary" />
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">Total Clicks</p>
-                  <p className="text-2xl font-bold text-foreground">{totalClicks.toLocaleString()}</p>
+                  <p className="text-sm text-muted-foreground font-medium">Total Budget</p>
+                  <p className="text-3xl font-bold text-foreground mt-1">{formatCurrency(campaign.budget)}</p>
                 </div>
               </div>
             </Card>
 
-            <Card className="p-6 bg-card/50 backdrop-blur-sm border-border/50">
-              <div className="flex items-center gap-3">
-                <div className="rounded-full bg-primary/10 p-3">
-                  <Users className="h-5 w-5 text-primary" />
+            <Card className="relative overflow-hidden p-6 bg-gradient-to-br from-card/80 to-card/40 backdrop-blur-md border-border/60 shadow-lg hover:shadow-xl transition-shadow">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full blur-2xl"></div>
+              <div className="flex items-center gap-4">
+                <div className="rounded-xl bg-gradient-to-br from-emerald-500/20 to-emerald-500/10 p-4 shadow-inner">
+                  <DollarSign className="h-6 w-6 text-emerald-600" />
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">Conversions</p>
-                  <p className="text-2xl font-bold text-foreground">{totalConversions.toLocaleString()}</p>
+                  <p className="text-sm text-muted-foreground font-medium">Revenue Generated</p>
+                  <p className="text-3xl font-bold text-emerald-600 mt-1">{formatCurrency(campaign.revenue || 0)}</p>
                 </div>
               </div>
             </Card>
 
-            <Card className="p-6 bg-card/50 backdrop-blur-sm border-border/50">
-              <div className="flex items-center gap-3">
-                <div className="rounded-full bg-primary/10 p-3">
-                  <DollarSign className="h-5 w-5 text-primary" />
+            <Card className="relative overflow-hidden p-6 bg-gradient-to-br from-card/80 to-card/40 backdrop-blur-md border-border/60 shadow-lg hover:shadow-xl transition-shadow">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 rounded-full blur-2xl"></div>
+              <div className="flex items-center gap-4">
+                <div className="rounded-xl bg-gradient-to-br from-blue-500/20 to-blue-500/10 p-4 shadow-inner">
+                  <TrendingUp className="h-6 w-6 text-blue-600" />
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">Revenue</p>
-                  <p className="text-2xl font-bold text-foreground">${totalRevenue.toFixed(2)}</p>
-                </div>
-              </div>
-            </Card>
-
-            <Card className="p-6 bg-card/50 backdrop-blur-sm border-border/50">
-              <div className="flex items-center gap-3">
-                <div className="rounded-full bg-primary/10 p-3">
-                  <TrendingUp className="h-5 w-5 text-primary" />
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">ROI</p>
-                  <p className="text-2xl font-bold text-primary">{roi}%</p>
+                  <p className="text-sm text-muted-foreground font-medium">Return on Investment</p>
+                  <p className="text-3xl font-bold text-blue-600 mt-1">{campaign.roi?.toFixed(2) || '0.00'}%</p>
                 </div>
               </div>
             </Card>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card className="p-6 bg-card/50 backdrop-blur-sm border-border/50">
-              <h3 className="text-lg font-semibold text-foreground mb-4">Daily Clicks</h3>
-              <ResponsiveContainer width="100%" height={250}>
-                <LineChart data={clicksData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                  <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" fontSize={12} />
-                  <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: "hsl(var(--popover))",
-                      border: "1px solid hsl(var(--border))",
-                      borderRadius: "8px",
-                    }}
-                  />
-                  <Line type="monotone" dataKey="clicks" stroke="hsl(var(--primary))" strokeWidth={2} />
-                </LineChart>
-              </ResponsiveContainer>
-            </Card>
+          {/* Main Content Grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2 space-y-6">
+              {/* Budget Progress Card */}
+              <Card className="p-8 bg-gradient-to-br from-card/80 to-card/40 backdrop-blur-md border-border/60 shadow-lg">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="p-2 rounded-lg bg-primary/10">
+                    <Activity className="h-5 w-5 text-primary" />
+                  </div>
+                  <h3 className="text-xl font-bold text-foreground">Budget Overview</h3>
+                </div>
+                
+                <div className="flex items-center justify-between mb-6">
+                  <div>
+                    <p className="text-sm text-muted-foreground mb-1">Budget Spent</p>
+                    <p className="text-2xl font-bold text-foreground">
+                      {formatCurrency(campaign.revenue || 0)} 
+                      <span className="text-lg text-muted-foreground font-normal"> / {formatCurrency(campaign.budget)}</span>
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm text-muted-foreground mb-1">Current ROI</p>
+                    <p className="text-2xl font-bold text-blue-600">{campaign.roi?.toFixed(2) || '0.00'}%</p>
+                  </div>
+                </div>
 
-            <Card className="p-6 bg-card/50 backdrop-blur-sm border-border/50">
-              <h3 className="text-lg font-semibold text-foreground mb-4">Conversions by Day</h3>
-              <ResponsiveContainer width="100%" height={250}>
-                <BarChart data={conversionsData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                  <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" fontSize={12} />
-                  <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: "hsl(var(--popover))",
-                      border: "1px solid hsl(var(--border))",
-                      borderRadius: "8px",
-                    }}
-                  />
-                  <Bar dataKey="conversions" fill="hsl(var(--primary))" />
-                </BarChart>
-              </ResponsiveContainer>
-            </Card>
+                {campaign.budget > 0 ? (
+                  (() => {
+                    const percent = Math.min(100, Math.round(((campaign.revenue || 0) / campaign.budget) * 100))
+                    return (
+                      <div>
+                        <div className="relative w-full bg-muted/20 h-4 rounded-full overflow-hidden">
+                          <div 
+                            className="h-4 rounded-full bg-gradient-to-r from-emerald-400 via-blue-500 to-primary shadow-lg transition-all duration-500" 
+                            style={{ width: `${percent}%` }}
+                          >
+                            <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 animate-pulse"></div>
+                          </div>
+                        </div>
+                        <div className="flex items-center justify-between mt-3">
+                          <p className="text-sm text-muted-foreground">{percent}% of budget utilized</p>
+                          <p className="text-sm font-medium text-foreground">{formatCurrency(campaign.budget - (campaign.revenue || 0))} remaining</p>
+                        </div>
+                      </div>
+                    )
+                  })()
+                ) : (
+                  <p className="text-sm text-muted-foreground">No budget set for this campaign</p>
+                )}
+              </Card>
+
+              {/* Metrics Card */}
+              <Card className="p-8 bg-gradient-to-br from-card/80 to-card/40 backdrop-blur-md border-border/60 shadow-lg">
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-lg bg-primary/10">
+                      <Activity className="h-5 w-5 text-primary" />
+                    </div>
+                    <h3 className="text-xl font-bold text-foreground">Performance Metrics</h3>
+                  </div>
+                  {metrics.length > 0 && (
+                    <Badge variant="secondary" className="px-3">
+                      {metrics.length} entries
+                    </Badge>
+                  )}
+                </div>
+
+                {metrics.length === 0 ? (
+                  <div className="text-center py-12">
+                    <div className="p-4 rounded-full bg-muted/20 w-16 h-16 mx-auto mb-4 flex items-center justify-center">
+                      <Activity className="h-8 w-8 text-muted-foreground" />
+                    </div>
+                    <p className="text-muted-foreground">No metric entries available yet</p>
+                    <p className="text-sm text-muted-foreground mt-1">Metrics will appear as the campaign progresses</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {metrics.slice().reverse().slice(0,6).map((m:any) => (
+                      <div 
+                        key={m.id || m['@id'] || Math.random()} 
+                        className="p-5 bg-gradient-to-br from-card/60 to-card/20 backdrop-blur-sm rounded-xl border border-border/40 hover:border-border/60 transition-all hover:shadow-md"
+                      >
+                        <div className="flex items-center justify-between mb-3">
+                          <p className="text-xs text-muted-foreground font-medium">
+                            {m.date ? new Date(m.date).toLocaleDateString() : (m.createdAt ? new Date(m.createdAt).toLocaleDateString() : '—')}
+                          </p>
+                          <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></div>
+                        </div>
+                        <div className="grid grid-cols-3 gap-3">
+                          <div>
+                            <p className="text-xs text-muted-foreground mb-1">Clicks</p>
+                            <p className="text-xl font-bold text-foreground">{m.clicks ?? 0}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-muted-foreground mb-1">Conv.</p>
+                            <p className="text-xl font-bold text-foreground">{m.conversions ?? 0}</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-xs text-muted-foreground mb-1">Revenue</p>
+                            <p className="text-xl font-bold text-emerald-600">{formatCurrency(m.revenue ?? 0)}</p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </Card>
+            </div>
+
+            {/* Sidebar */}
+            <div className="space-y-6">
+              {/* Affiliates Card */}
+              <Card className="p-6 bg-gradient-to-br from-card/80 to-card/40 backdrop-blur-md border-border/60 shadow-lg">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="p-2 rounded-lg bg-primary/10">
+                    <Users className="h-5 w-5 text-primary" />
+                  </div>
+                  <h3 className="text-lg font-bold text-foreground">Affiliates</h3>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {affiliates.length === 0 ? (
+                    <p className="text-sm text-muted-foreground py-2">No affiliates linked yet</p>
+                  ) : (
+                    affiliates.map((a:any) => (
+                      <span 
+                        key={a.id || a['@id'] || Math.random()} 
+                        className="px-4 py-2 rounded-full bg-gradient-to-r from-primary/10 to-primary/5 border border-primary/20 text-sm font-medium text-foreground hover:bg-primary/15 transition-colors"
+                      >
+                        {a.name || a.company || a.title || (typeof a === 'string' ? a.split('/').pop() : a['@id']?.split('/').pop() || 'Affiliate')}
+                      </span>
+                    ))
+                  )}
+                </div>
+              </Card>
+
+              {/* Quick Actions Card */}
+              <Card className="p-6 bg-gradient-to-br from-card/80 to-card/40 backdrop-blur-md border-border/60 shadow-lg">
+                <h3 className="text-lg font-bold text-foreground mb-4">Quick Actions</h3>
+                <div className="flex flex-col gap-3">
+                  <Link 
+                    href={`/dashboard/campaigns/${campaignId}/edit`} 
+                    className="flex items-center justify-between p-3 rounded-lg bg-muted/20 hover:bg-muted/30 transition-colors group"
+                  >
+                    <span className="text-sm font-medium text-primary">Edit Campaign</span>
+                    <ArrowLeft className="h-4 w-4 text-primary rotate-180 group-hover:translate-x-1 transition-transform" />
+                  </Link>
+                  <button className="flex items-center justify-between p-3 rounded-lg bg-muted/20 hover:bg-muted/30 transition-colors group text-left">
+                    <span className="text-sm font-medium text-muted-foreground">View Raw JSON</span>
+                    <ArrowLeft className="h-4 w-4 text-muted-foreground rotate-180 group-hover:translate-x-1 transition-transform" />
+                  </button>
+                </div>
+              </Card>
+            </div>
           </div>
-
-          <Card className="p-6 bg-card/50 backdrop-blur-sm border-border/50">
-            <h3 className="text-lg font-semibold text-foreground mb-4">Budget Allocation</h3>
-            <ResponsiveContainer width="100%" height={300}>
-              <PieChart>
-                <Pie
-                  data={budgetData}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  label={({ name, value }) => `${name}: $${value.toFixed(2)}`}
-                  outerRadius={100}
-                  fill="hsl(var(--primary))"
-                  dataKey="value"
-                >
-                  {budgetData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: "hsl(var(--popover))",
-                    border: "1px solid hsl(var(--border))",
-                    borderRadius: "8px",
-                  }}
-                />
-                <Legend />
-              </PieChart>
-            </ResponsiveContainer>
-          </Card>
         </div>
       </div>
 
-      <div className="w-[400px] border-l border-border bg-sidebar/30 p-6">
-        <h2 className="text-xl font-semibold text-foreground mb-4">Campaign Assistant</h2>
+      {/* AI Assistant Sidebar */}
+      <div className="w-[400px] border-l border-border bg-gradient-to-b from-sidebar/40 to-sidebar/20 backdrop-blur-sm p-6">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="p-2 rounded-lg bg-primary/10">
+            <Activity className="h-5 w-5 text-primary" />
+          </div>
+          <h2 className="text-xl font-semibold text-foreground">Campaign Assistant</h2>
+        </div>
         <ChatInterface campaignId={campaignId} className="h-[calc(100vh-120px)]" />
       </div>
     </div>

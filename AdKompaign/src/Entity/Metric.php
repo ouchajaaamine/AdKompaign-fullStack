@@ -7,6 +7,7 @@ use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use ApiPlatform\Metadata\ApiFilter;
 use ApiPlatform\Metadata\ApiResource;
+use ApiPlatform\Doctrine\Orm\Filter\OrderFilter;
 use ApiPlatform\Doctrine\Orm\Filter\SearchFilter;
 use Symfony\Component\Serializer\Annotation\Groups;
 
@@ -15,6 +16,7 @@ use Symfony\Component\Serializer\Annotation\Groups;
     denormalizationContext: ['groups' => ['metric:write']],
 )]
 #[ApiFilter(SearchFilter::class, properties: ['notes' => 'partial'])]
+#[ApiFilter(OrderFilter::class, properties: ['timestamp' => 'DESC', 'createdAt' => 'DESC'], arguments: ['orderParameterName' => 'order'])]
 #[ORM\Entity(repositoryClass: MetricRepository::class)]
 #[ORM\HasLifecycleCallbacks]
 class Metric

@@ -9,6 +9,8 @@ export interface Campaign {
   updatedAt: string
   metrics?: string[]
   affiliates?: string[]
+  revenue?: number  // Added revenue field from backend
+  roi?: number      // Added ROI field from backend
 }
 
 export interface Metric {
@@ -18,6 +20,7 @@ export interface Metric {
   conversions: number
   revenue: string
   date: string
+  timestamp: string  // ISO date string from backend
   name: string
   value: string
   notes?: string

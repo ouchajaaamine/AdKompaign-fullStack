@@ -34,21 +34,15 @@ class RoiController extends AbstractController
         $totalSpent = $campaign->getBudget();
         $this->logger->info('Total spent (budget): ' . $totalSpent);
         
-        // Calculate total revenue from metrics containing revenue-related keywords
+        // Calculate total revenue from ALL metrics that have revenue data
         $totalRevenue = 0.0;
-        $revenueKeywords = ['revenue', 'sales', 'income', 'profit'];
         
         foreach ($campaign->getMetrics() as $metric) {
-            $metricName = strtolower($metric->getName());
-            $metricNotes = strtolower($metric->getNotes() ?? '');
-            
-            // Check if metric name or notes contain revenue keywords
-            foreach ($revenueKeywords as $keyword) {
-                if (strpos($metricName, $keyword) !== false || strpos($metricNotes, $keyword) !== false) {
-                    $totalRevenue += (float) $metric->getValue();
-                    $this->logger->info("Added revenue from metric: {$metric->getName()} = {$metric->getValue()}");
-                    break; // Only count once per metric
-                }
+            // Use the actual revenue field, not value
+            $metricRevenue = (float) $metric->getRevenue();
+            if ($metricRevenue > 0) {
+                $totalRevenue += $metricRevenue;
+                $this->logger->info("Added revenue from metric: {$metric->getName()} = {$metricRevenue}");
             }
         }
         

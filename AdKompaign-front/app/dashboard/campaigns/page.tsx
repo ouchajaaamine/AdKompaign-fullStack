@@ -12,6 +12,7 @@ import { Plus, Edit, Trash2, Search, Filter, SortAsc, Grid3X3, List, TrendingUp,
 import { useToast } from "@/hooks/use-toast"
 import { formatCurrency } from "@/lib/utils"
 import { motion } from "framer-motion"
+import { useRouter } from "next/navigation"
 
 export default function CampaignsPage() {
   const [campaigns, setCampaigns] = useState<any[]>([])
@@ -39,6 +40,7 @@ export default function CampaignsPage() {
   })
   
   const { toast } = useToast()
+  const router = useRouter()
 
   useEffect(() => {
     async function loadData() {
@@ -126,6 +128,14 @@ export default function CampaignsPage() {
       status: originalCampaign.status
     })
     setEditModalOpen(true)
+  }
+
+  const handleRowClick = (campaignId: number, e: React.MouseEvent) => {
+    // Prevent navigation if clicking on action buttons
+    if ((e.target as HTMLElement).closest('button')) {
+      return
+    }
+    router.push(`/dashboard/campaigns/${campaignId}`)
   }
 
   const handleDelete = async (campaignId: number) => {
@@ -591,7 +601,11 @@ export default function CampaignsPage() {
                 </thead>
                 <tbody>
                   {filteredCampaigns.map((campaign) => (
-                    <tr key={campaign.id} className="border-t hover:bg-muted/30 transition-colors">
+                    <tr 
+                      key={campaign.id} 
+                      className="border-t hover:bg-muted/30 transition-colors cursor-pointer"
+                      onClick={(e) => handleRowClick(campaign.id, e)}
+                    >
                       <td className="p-4">
                         <div>
                           <p className="font-medium text-foreground">{campaign.name}</p>

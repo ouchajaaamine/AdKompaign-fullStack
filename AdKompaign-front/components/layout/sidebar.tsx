@@ -9,8 +9,6 @@ const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { name: "Campaigns", href: "/dashboard/campaigns", icon: Target },
   { name: "Affiliates", href: "/dashboard/affiliates", icon: Users },
-  { name: "Metrics", href: "/dashboard/metrics", icon: BarChart3 },
-  { name: "AI Chat", href: "/dashboard/chat", icon: MessageSquare },
 ]
 
 export function Sidebar() {

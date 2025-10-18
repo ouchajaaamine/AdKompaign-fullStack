@@ -250,18 +250,24 @@ class Campaign
     #[Groups(['campaign:read'])]
     public function getRevenue(): float
     {
+        // Sum the dedicated revenue field from metrics to avoid misclassification.
+        // Fallback to `value` only if `revenue` is null.
         $totalRevenue = 0.0;
-        $revenueKeywords = ['revenue', 'sales', 'income', 'profit'];
-        
+
         foreach ($this->getMetrics() as $metric) {
-            $metricName = strtolower($metric->getName());
-            $metricNotes = strtolower($metric->getNotes() ?? '');
+            $metricRevenue = $metric->getRevenue();
             
-            foreach ($revenueKeywords as $keyword) {
-                if (strpos($metricName, $keyword) !== false || strpos($metricNotes, $keyword) !== false) {
-                    $totalRevenue += (float) $metric->getValue();
-                    break;
-                }
+            if ($metricRevenue !== null && $metricRevenue !== '0.00' && $metricRevenue !== '') {
+                $revenue = (float) $metricRevenue;
+                $totalRevenue += $revenue;
+                continue;
+            }
+
+            // Fallback path: if revenue is not set, attempt to use value when it semantically represents revenue
+            // This preserves compatibility with older seed data.
+            $value = (float) ($metric->getValue() ?? 0);
+            if ($value > 0) {
+                $totalRevenue += $value;
             }
         }
         

@@ -1,11 +1,36 @@
-const API_BASE_URL = "http://localhost:8000"
+export const API_BASE_URL = "http://localhost:8000"
+
+// Helper to unwrap API Platform JSON-LD collections
+function unwrapCollection(json: any): any[] {
+  if (!json) return []
+  // API Platform JSON-LD uses 'hydra:member' for collections
+  if (Array.isArray(json["hydra:member"])) return json["hydra:member"]
+  // Fallback for custom/JSON format collections
+  if (Array.isArray(json.member)) return json.member
+  // Sometimes the response could be a raw array
+  if (Array.isArray(json)) return json
+  return []
+}
 
 // Campaign API
 export async function fetchCampaigns(): Promise<any[]> {
-  const response = await fetch(`${API_BASE_URL}/api/campaigns`)
-  if (!response.ok) throw new Error("Failed to fetch campaigns")
-  const data = await response.json()
-  return data.member || []
+  try {
+    console.log('Fetching campaigns from:', `${API_BASE_URL}/api/campaigns`)
+    const response = await fetch(`${API_BASE_URL}/api/campaigns`)
+    console.log('Campaigns response status:', response.status)
+    if (!response.ok) {
+      console.error('Campaigns fetch failed:', response.status, response.statusText)
+      throw new Error(`Failed to fetch campaigns: ${response.status}`)
+    }
+    const data = await response.json()
+    console.log('Campaigns raw data:', data)
+    const campaigns = unwrapCollection(data)
+    console.log('Campaigns unwrapped:', campaigns.length, 'items')
+    return campaigns
+  } catch (error) {
+    console.error('Error in fetchCampaigns:', error)
+    throw error
+  }
 }
 
 export async function fetchCampaign(id: number): Promise<any> {
@@ -56,7 +81,7 @@ export async function fetchAffiliates(): Promise<any[]> {
   const response = await fetch(`${API_BASE_URL}/api/affiliates`)
   if (!response.ok) throw new Error("Failed to fetch affiliates")
   const data = await response.json()
-  return data.member || []
+  return unwrapCollection(data)
 }
 
 export async function fetchAffiliate(id: number): Promise<any> {
@@ -113,14 +138,14 @@ export async function fetchMetrics(limit: number = 50): Promise<any[]> {
   const response = await fetch(`${API_BASE_URL}/api/metrics?itemsPerPage=${limit}`)
   if (!response.ok) throw new Error("Failed to fetch metrics")
   const data = await response.json()
-  return data.member || []
+  return unwrapCollection(data)
 }
 
 export async function fetchTopMetrics(limit: number = 10): Promise<any[]> {
   const response = await fetch(`${API_BASE_URL}/api/metrics?itemsPerPage=${limit}&order[timestamp]=desc`)
   if (!response.ok) throw new Error("Failed to fetch top metrics")
   const data = await response.json()
-  return data.member || []
+  return unwrapCollection(data)
 }
 
 export async function fetchMetric(id: number): Promise<any> {
@@ -145,7 +170,8 @@ export async function updateMetric(id: number, data: any): Promise<any> {
   const response = await fetch(`${API_BASE_URL}/api/metrics/${id}`, {
     method: "PATCH",
     headers: {
-      "Content-Type": "application/json",
+      // API Platform expects JSON Merge Patch for PATCH
+      "Content-Type": "application/merge-patch+json",
     },
     body: JSON.stringify(data),
   })

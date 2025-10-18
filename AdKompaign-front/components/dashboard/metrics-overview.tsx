@@ -25,11 +25,16 @@ export function MetricsOverview({ metrics, campaigns }: MetricsOverviewProps) {
   const totalClicks = metrics.reduce((sum, m) => sum + (m.clicks || 0), 0)
   const totalConversions = metrics.reduce((sum, m) => sum + (m.conversions || 0), 0)
 
-  // Get top 3 campaigns by revenue from campaigns data
+  // Get top 3 campaigns by revenue from campaign data directly
   const topCampaigns = campaigns
-    .filter((c) => c.revenue !== undefined && c.revenue > 0)
+    .filter(c => c.revenue && c.revenue > 0)
     .sort((a, b) => (b.revenue || 0) - (a.revenue || 0))
     .slice(0, 3)
+    .map(c => ({
+      id: c.id,
+      name: c.name,
+      revenue: c.revenue || 0
+    }))
 
   return (
     <div className="space-y-6">
