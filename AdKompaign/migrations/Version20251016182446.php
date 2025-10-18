@@ -20,10 +20,18 @@ final class Version20251016182446 extends AbstractMigration
     public function up(Schema $schema): void
     {
         // this up() migration is auto-generated, please modify it to your needs
-        $this->addSql('ALTER TABLE metric ADD clicks INT DEFAULT NULL');
-        $this->addSql('ALTER TABLE metric ADD conversions INT DEFAULT NULL');
-        $this->addSql('ALTER TABLE metric ADD revenue NUMERIC(10, 2) DEFAULT NULL');
-        $this->addSql('ALTER TABLE metric DROP notes');
+        if (!$schema->getTable('metric')->hasColumn('clicks')) {
+            $this->addSql('ALTER TABLE metric ADD clicks INT DEFAULT NULL');
+        }
+        if (!$schema->getTable('metric')->hasColumn('conversions')) {
+            $this->addSql('ALTER TABLE metric ADD conversions INT DEFAULT NULL');
+        }
+        if (!$schema->getTable('metric')->hasColumn('revenue')) {
+            $this->addSql('ALTER TABLE metric ADD revenue NUMERIC(10, 2) DEFAULT NULL');
+        }
+        if ($schema->getTable('metric')->hasColumn('notes')) {
+            $this->addSql('ALTER TABLE metric DROP notes');
+        }
     }
 
     public function down(Schema $schema): void

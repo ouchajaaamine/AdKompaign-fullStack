@@ -1,4 +1,13 @@
-# Git
+var/
+vendor/
+node_modules/
+.git/
+.idea/
+.vscode/
+*.log
+composer.lock
+Dockerfile*
+docker-compose.yml# Git
 .git
 .gitignore
 
